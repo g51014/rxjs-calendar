@@ -1,5 +1,6 @@
 .body {
-  font-family: Verdana, Arial, \\5fae\8edf\6b63\9ed1\9ad4, Microsoft JhengHei, \\5fae\8edf\96c5\9ed1\9ad4, Microsoft YaHei;
+  font-family: Verdana, Arial, \\5fae\8edf\6b63\9ed1\9ad4, Microsoft JhengHei,
+ \\5fae\8edf\96c5\9ed1\9ad4, Microsoft YaHei;
   font-size: 14px;
   line-height: 1.5;
   color: #444;
@@ -62,5 +63,13 @@
           box-sizing: border-box;
   padding: 0 3px;
   background-color: lightgray;
+}
+
+/*fake*/
+span {
+  display: block;
+}
+.day {
+  border: solid black 1px;
 }
 /*# sourceMappingURL=calender.css.map */

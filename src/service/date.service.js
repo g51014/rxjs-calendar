@@ -34,15 +34,7 @@ export default class DateService {
 
       //current y/m
       this.display = new BehaviorSubject();
-      this.display$ = this.display.asObservable().pipe(
-          scan(
-              (previous,current) => {
-                let m = previous.m + current > 12 ? 1 : previous.m + current < 1 ? 12 : previous.m + current;
-                let y = previous.m + current > 12 ? previous.y + 1 : previous.m + current < 1 ? previous.y - 1 : previous.y;
-                return ({y,m});
-              }
-          ),
-      )
+      this.display$ = this.display.asObservable();
       
       // current month calendar
       this.month$ = this.display$.pipe(
@@ -71,7 +63,18 @@ export default class DateService {
                 }
               }
               return Week;
-          })
+          }),
+          filter(data => !!data)
+      )
+
+      //current month data
+      this.monthData$ = this.date$.pipe(
+        mergeMap(
+          _ => this.display$,
+          (all, currentYM) => (all.filter(
+            e => parseInt(e.date.split('/')[0]) == currentYM.y ? parseInt(e.date.split('/')[1]) == currentYM.m ? true : false : false
+          ))
+        ),
       )
 
       //method binding
@@ -85,12 +88,22 @@ export default class DateService {
     //change month
     switchMonth(distance) {
       this.calendarRange$.pipe(
-        mergeMap(_ => this.display$,(range, current) => ({range, current}))).subscribe(
+        mergeMap(_ => this.display$,(range, current) => ({range, current})),take(1)).subscribe(
         data => {
-          // this.displaySub
+          // console.log(data.range)
+          let m = data.current.m + distance > 12 ? 1 : data.current.m + distance < 1 ? 12 : data.current.m + distance;
+          let y = data.current.m + distance > 12 ? data.current.y + 1 : data.current.m + distance < 1 ? data.current.y - 1 : data.current.y;
+          //only display months which in data
+          //max
+          y > data.range.last.y ? this.display.next({y: data.range.last.y, m: data.range.last.m}) : 
+          m > data.range.last.m && y == data.range.last.y ? this.display.next({y: data.range.last.y, m: data.range.last.m}) : 
+          //min
+          y < data.range.first.y ? this.display.next({y: data.range.first.y, m: data.range.first.m}) : 
+          m < data.range.first.m && y == data.range.first.y ? this.display.next({y: data.range.first.y, m: data.range.first.m}) : 
+          this.display.next({y,m});
         }
       )
-      this.display.next(distance)
+      
     }
 
     //get all years

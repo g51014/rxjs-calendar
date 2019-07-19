@@ -14956,7 +14956,7 @@ var _App2 = _interopRequireDefault(_App);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var setting = {
-  dataSource: __webpack_require__(393),
+  dataSource: __webpack_require__(396),
   //   [
   //     // 資料來源的輸入接口 [ array | string ] 如果是 string的話，請輸入網址
   //     {
@@ -14969,9 +14969,7 @@ var setting = {
   //     }
   //     // ...
   //   ],
-  // 輸入一開始要在哪一個月份 [string] YYYYMM，若輸入的年月沒有資料，
-  // 就要找相近的年月，若前一個月後一個月都有資料，就顯示資料比數比較多的那一個月
-  initYearMonth: "201907",
+  initYearMonth: "201704",
   // 設定各資料的key
   dataKeySetting: {
     // 保證出團
@@ -27548,7 +27546,9 @@ var App = function (_React$Component) {
     $date.display.next({ y: parseInt(_this.props.initYearMonth.slice(0, 4)), m: parseInt(_this.props.initYearMonth.split(_this.props.initYearMonth.slice(0, 4))[1]) });
     _this.state = {
       $date: $date,
-      mode: 'calendar'
+      mode: 'calendar',
+      currentYM: { y: parseInt(_this.props.initYearMonth.slice(0, 4)), m: parseInt(_this.props.initYearMonth.split(_this.props.initYearMonth.slice(0, 4))[1]) },
+      monthData: []
     };
     return _this;
   }
@@ -27559,14 +27559,12 @@ var App = function (_React$Component) {
       var _this2 = this;
 
       this.state.$date.display$.subscribe(function (_) {
-        return console.log('success', _);
+        _this2.setState({ currentYM: _ });
+        console.log('success', _);
       });
-      this.state.$date.month$.subscribe(function (month) {
-        return _this2.setState({ month: month });
+      this.state.$date.monthData$.subscribe(function (monthData) {
+        _this2.setState({ monthData: monthData });
       });
-      // this.state.$date.calendarRange$.subscribe(
-      //   _ => console.log('date',_)
-      // );
     }
   }, {
     key: "changeMode",
@@ -27577,11 +27575,11 @@ var App = function (_React$Component) {
   }, {
     key: "render",
     value: function render() {
-      var container = this.state.mode == 'calendar' ? _react2.default.createElement(_Calendar2.default, { month: this.state.month, service: this.state.$date }) : _react2.default.createElement(_List2.default, null);
+      var container = this.state.mode == 'calendar' ? _react2.default.createElement(_Calendar2.default, { monthData: this.state.monthData, currentYM: this.state.currentYM, service: this.state.$date }) : _react2.default.createElement(_List2.default, { currentYM: this.state.currentYM, service: this.state.$date });
       return _react2.default.createElement(
         "div",
         { className: "calendar" },
-        _react2.default.createElement(_monthSelecter2.default, { service: this.state.$date }),
+        _react2.default.createElement(_monthSelecter2.default, { currentYM: this.state.currentYM, service: this.state.$date }),
         container,
         _react2.default.createElement(_Button2.default, { callback: this.changeMode.bind(this, this.state.mode == 'calendar' ? true : false), mode: this.state.mode == 'calendar' ? '列表' : '月曆' })
       );
@@ -27654,11 +27652,7 @@ var DateService = function () {
 
     //current y/m
     this.display = new _rxjs.BehaviorSubject();
-    this.display$ = this.display.asObservable().pipe((0, _operators.scan)(function (previous, current) {
-      var m = previous.m + current > 12 ? 1 : previous.m + current < 1 ? 12 : previous.m + current;
-      var y = previous.m + current > 12 ? previous.y + 1 : previous.m + current < 1 ? previous.y - 1 : previous.y;
-      return { y: y, m: m };
-    }));
+    this.display$ = this.display.asObservable();
 
     // current month calendar
     this.month$ = this.display$.pipe((0, _operators.map)(function (data) {
@@ -27684,6 +27678,17 @@ var DateService = function () {
         }
       }
       return Week;
+    }), (0, _operators.filter)(function (data) {
+      return !!data;
+    }));
+
+    //current month data
+    this.monthData$ = this.date$.pipe((0, _operators.mergeMap)(function (_) {
+      return _this.display$;
+    }, function (all, currentYM) {
+      return all.filter(function (e) {
+        return parseInt(e.date.split('/')[0]) == currentYM.y ? parseInt(e.date.split('/')[1]) == currentYM.m ? true : false : false;
+      });
     }));
 
     //method binding
@@ -27706,10 +27711,16 @@ var DateService = function () {
         return _this2.display$;
       }, function (range, current) {
         return { range: range, current: current };
-      })).subscribe(function (data) {
-        // this.displaySub
+      }), (0, _operators.take)(1)).subscribe(function (data) {
+        // console.log(data.range)
+        var m = data.current.m + distance > 12 ? 1 : data.current.m + distance < 1 ? 12 : data.current.m + distance;
+        var y = data.current.m + distance > 12 ? data.current.y + 1 : data.current.m + distance < 1 ? data.current.y - 1 : data.current.y;
+        //only display months which in data
+        //max
+        y > data.range.last.y ? _this2.display.next({ y: data.range.last.y, m: data.range.last.m }) : m > data.range.last.m && y == data.range.last.y ? _this2.display.next({ y: data.range.last.y, m: data.range.last.m }) :
+        //min
+        y < data.range.first.y ? _this2.display.next({ y: data.range.first.y, m: data.range.first.m }) : m < data.range.first.m && y == data.range.first.y ? _this2.display.next({ y: data.range.first.y, m: data.range.first.m }) : _this2.display.next({ y: y, m: m });
       });
-      this.display.next(distance);
     }
 
     //get all years
@@ -36560,25 +36571,53 @@ var Calendar = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (Calendar.__proto__ || Object.getPrototypeOf(Calendar)).call(this, props));
 
-    _this.state = {};
+    _this.state = {
+      month: []
+    };
+    _this.formatDate = _this.formatDate.bind(_this);
     return _this;
   }
 
   _createClass(Calendar, [{
     key: 'componentDidMount',
-    value: function componentDidMount() {}
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      this.props.service.month$.subscribe(function (month) {
+        _this2.setState({ month: month });
+      });
+    }
+  }, {
+    key: 'formatDate',
+    value: function formatDate(day) {
+      var formatM = this.props.currentYM.m < 10 ? '0' + this.props.currentYM.m : this.props.currentYM.m;
+      var formatDay = day < 10 ? '0' + day : day;
+      return this.props.currentYM.y + '/' + formatM + '/' + formatDay;
+    }
   }, {
     key: 'render',
     value: function render() {
+      var _this3 = this;
 
       var month = [];
-      for (var i = 0; i < 7; i++) {
+
+      var _loop = function _loop() {
+        var date = [];
+        !!_this3.state.month[i] ? _this3.state.month[i].forEach(function (e) {
+          date.push(_this3.formatDate(e));
+        }) : '';
         month.push(_react2.default.createElement(_column2.default, {
-          month: this.props.month == undefined ? undefined : this.props.month[i],
-          service: this.props.service,
+          month: _this3.state.month[i],
+          service: _this3.props.service,
           key: i,
-          index: i
+          index: i,
+          date: date,
+          data: _this3.props.monthData
         }));
+      };
+
+      for (var i = 0; i < 7; i++) {
+        _loop();
       }
       return _react2.default.createElement(
         'div',
@@ -36638,21 +36677,20 @@ var Col = function (_React$Component) {
 
   _createClass(Col, [{
     key: 'componentDidMount',
-    value: function componentDidMount() {
-      // this.props.service.month$.subscribe(
-      //   month => this.setState({month:month})
-      // );
-    }
+    value: function componentDidMount() {}
   }, {
     key: 'render',
     value: function render() {
+      // console.log(this.props.data)
       var days = [];
       for (var i = 0; i < 7; i++) {
         days.push(_react2.default.createElement(_day2.default, {
           service: this.props.service,
-          date: this.props.month == undefined ? ' ' : i == 0 ? this.state.text[this.props.index] : this.props.month[i - 1],
-          name: i,
-          key: i
+          day: this.props.month == undefined ? ' ' : i == 0 ? this.state.text[this.props.index] : this.props.month[i - 1],
+          data: this.props.data,
+          key: i,
+          index: i,
+          date: i == 0 ? '' : this.props.date[i - 1]
         }));
       }
 
@@ -36707,19 +36745,74 @@ var Day = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Day.__proto__ || Object.getPrototypeOf(Day)).call(this, props));
 
     _this.state = {};
+    _this.getDaysData = _this.getDaysData.bind(_this);
     return _this;
   }
 
   _createClass(Day, [{
-    key: "componentDidMount",
+    key: 'componentDidMount',
     value: function componentDidMount() {}
   }, {
-    key: "render",
+    key: 'getDaysData',
+    value: function getDaysData(date) {
+      if (this.props.data.length > 0) {
+        var activities = [],
+            acvitity = void 0;
+        this.props.data.forEach(function (e) {
+          if (e.date == date) {
+            acvitity = e;
+            activities.push(e);
+          }
+        });
+        activities.forEach(function (e) {
+          acvitity = acvitity.price < e.price ? acvitity : e;
+        });
+        return acvitity;
+      }
+    }
+  }, {
+    key: 'onClick',
+    value: function onClick() {
+      console.log(this.props.date);
+    }
+  }, {
+    key: 'render',
     value: function render() {
+      var data = this.getDaysData(this.props.date);
+      var day = this.props.day == 0 ? ' ' : this.props.day;
+      var status = this.props.index == 0 ? '' : data == undefined ? '' : data.status;
+      var availableVancancy = this.props.index == 0 ? '' : data == undefined ? '' : "可賣" + data.availableVancancy;
+      var totalVacnacy = this.props.index == 0 ? '' : data == undefined ? '' : "團位" + data.totalVacnacy;
+      var price = this.props.index == 0 ? '' : data == undefined ? '' : data.price;
+
       return _react2.default.createElement(
-        "div",
-        { className: "day" },
-        this.props.date
+        'div',
+        { onClick: this.onClick.bind(this), className: 'day' },
+        _react2.default.createElement(
+          'span',
+          null,
+          this.props.day
+        ),
+        _react2.default.createElement(
+          'span',
+          null,
+          status
+        ),
+        _react2.default.createElement(
+          'span',
+          null,
+          availableVancancy
+        ),
+        _react2.default.createElement(
+          'span',
+          null,
+          totalVacnacy
+        ),
+        _react2.default.createElement(
+          'span',
+          null,
+          price
+        )
       );
     }
   }]);
@@ -36789,7 +36882,10 @@ var Button = function (_React$Component) {
 exports.default = Button;
 
 /***/ }),
-/* 393 */
+/* 393 */,
+/* 394 */,
+/* 395 */,
+/* 396 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -36798,7 +36894,7 @@ exports.default = Button;
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-var data1 = [{
+var data3 = [{
     "guaranteed": false,
     "date": "2018/10/06",
     "price": 76263,
@@ -36919,20 +37015,6 @@ var data1 = [{
     "status": "預定"
 }, {
     "guaranteed": true,
-    "date": "2017/03/27",
-    "price": 73338,
-    "availableVancancy": 36,
-    "totalVacnacy": 488,
-    "status": "截止"
-}, {
-    "guaranteed": false,
-    "date": "2017/04/02",
-    "price": 58544,
-    "availableVancancy": 56,
-    "totalVacnacy": 217,
-    "status": "預定"
-}, {
-    "guaranteed": true,
     "date": "2017/12/08",
     "price": 86774,
     "availableVancancy": 9,
@@ -36966,20 +37048,6 @@ var data1 = [{
     "availableVancancy": 41,
     "totalVacnacy": 22,
     "status": "額滿"
-}, {
-    "guaranteed": true,
-    "date": "2017/04/14",
-    "price": 989,
-    "availableVancancy": 79,
-    "totalVacnacy": 458,
-    "status": "額滿"
-}, {
-    "guaranteed": false,
-    "date": "2017/12/15",
-    "price": 17680,
-    "availableVancancy": 54,
-    "totalVacnacy": 257,
-    "status": "報名"
 }, {
     "guaranteed": true,
     "date": "2017/04/29",
@@ -37085,90 +37153,6 @@ var data1 = [{
     "availableVancancy": 53,
     "totalVacnacy": 181,
     "status": "額滿"
-}, {
-    "guaranteed": true,
-    "date": "2018/01/04",
-    "price": 62489,
-    "availableVancancy": 3,
-    "totalVacnacy": 250,
-    "status": "後補"
-}, {
-    "guaranteed": true,
-    "date": "2018/06/27",
-    "price": 40211,
-    "availableVancancy": 76,
-    "totalVacnacy": 187,
-    "status": "截止"
-}, {
-    "guaranteed": true,
-    "date": "2018/09/17",
-    "price": 72547,
-    "availableVancancy": 44,
-    "totalVacnacy": 240,
-    "status": "額滿"
-}, {
-    "guaranteed": false,
-    "date": "2017/10/03",
-    "price": 19524,
-    "availableVancancy": 32,
-    "totalVacnacy": 129,
-    "status": "截止"
-}, {
-    "guaranteed": false,
-    "date": "2018/10/24",
-    "price": 29410,
-    "availableVancancy": 78,
-    "totalVacnacy": 477,
-    "status": "後補"
-}, {
-    "guaranteed": false,
-    "date": "2018/07/30",
-    "price": 80700,
-    "availableVancancy": 60,
-    "totalVacnacy": 208,
-    "status": "後補"
-}, {
-    "guaranteed": false,
-    "date": "2018/08/08",
-    "price": 25582,
-    "availableVancancy": 47,
-    "totalVacnacy": 155,
-    "status": "額滿"
-}, {
-    "guaranteed": true,
-    "date": "2018/09/15",
-    "price": 68115,
-    "availableVancancy": 50,
-    "totalVacnacy": 20,
-    "status": "預定"
-}, {
-    "guaranteed": false,
-    "date": "2018/01/29",
-    "price": 16486,
-    "availableVancancy": 10,
-    "totalVacnacy": 143,
-    "status": "額滿"
-}, {
-    "guaranteed": false,
-    "date": "2018/07/09",
-    "price": 83589,
-    "availableVancancy": 98,
-    "totalVacnacy": 316,
-    "status": "額滿"
-}, {
-    "guaranteed": true,
-    "date": "2017/11/23",
-    "price": 23525,
-    "availableVancancy": 92,
-    "totalVacnacy": 362,
-    "status": "報名"
-}, {
-    "guaranteed": false,
-    "date": "2017/05/18",
-    "price": 45127,
-    "availableVancancy": 63,
-    "totalVacnacy": 113,
-    "status": "後補"
 }, {
     "guaranteed": true,
     "date": "2017/04/21",
@@ -37400,20 +37384,6 @@ var data1 = [{
     "availableVancancy": 60,
     "totalVacnacy": 242,
     "status": "預定"
-}, {
-    "guaranteed": false,
-    "date": "2018/04/02",
-    "price": 58531,
-    "availableVancancy": 53,
-    "totalVacnacy": 26,
-    "status": "預定"
-}, {
-    "guaranteed": false,
-    "date": "2017/05/17",
-    "price": 29988,
-    "availableVancancy": 1,
-    "totalVacnacy": 214,
-    "status": "報名"
 }, {
     "guaranteed": false,
     "date": "2018/08/22",
@@ -39172,125 +39142,6 @@ var data1 = [{
     "totalVacnacy": 386,
     "status": "額滿"
 }, {
-    "guaranteed": true,
-    "date": "2017/06/05",
-    "price": 95018,
-    "availableVancancy": 50,
-    "totalVacnacy": 396,
-    "status": "預定"
-}, {
-    "guaranteed": false,
-    "date": "2017/01/01",
-    "price": 59305,
-    "availableVancancy": 68,
-    "totalVacnacy": 91,
-    "status": "報名"
-}, {
-    "guaranteed": false,
-    "date": "2016/12/04",
-    "price": 98906,
-    "availableVancancy": 54,
-    "totalVacnacy": 459,
-    "status": "預定"
-}, {
-    "guaranteed": true,
-    "date": "2018/08/07",
-    "price": 63035,
-    "availableVancancy": 15,
-    "totalVacnacy": 469,
-    "status": "截止"
-}, {
-    "guaranteed": false,
-    "date": "2017/12/23",
-    "price": 4758,
-    "availableVancancy": 17,
-    "totalVacnacy": 78,
-    "status": "額滿"
-}, {
-    "guaranteed": false,
-    "date": "2017/05/05",
-    "price": 61337,
-    "availableVancancy": 10,
-    "totalVacnacy": 479,
-    "status": "報名"
-}, {
-    "guaranteed": true,
-    "date": "2017/08/18",
-    "price": 36888,
-    "availableVancancy": 65,
-    "totalVacnacy": 281,
-    "status": "預定"
-}, {
-    "guaranteed": false,
-    "date": "2017/12/20",
-    "price": 18669,
-    "availableVancancy": 32,
-    "totalVacnacy": 474,
-    "status": "報名"
-}, {
-    "guaranteed": true,
-    "date": "2018/07/22",
-    "price": 73801,
-    "availableVancancy": 76,
-    "totalVacnacy": 3,
-    "status": "後補"
-}, {
-    "guaranteed": false,
-    "date": "2016/12/21",
-    "price": 8991,
-    "availableVancancy": 52,
-    "totalVacnacy": 445,
-    "status": "預定"
-}, {
-    "guaranteed": false,
-    "date": "2017/03/20",
-    "price": 45844,
-    "availableVancancy": 62,
-    "totalVacnacy": 0,
-    "status": "報名"
-}, {
-    "guaranteed": false,
-    "date": "2018/06/01",
-    "price": 48957,
-    "availableVancancy": 74,
-    "totalVacnacy": 391,
-    "status": "後補"
-}, {
-    "guaranteed": false,
-    "date": "2018/12/27",
-    "price": 97783,
-    "availableVancancy": 52,
-    "totalVacnacy": 107,
-    "status": "額滿"
-}, {
-    "guaranteed": true,
-    "date": "2017/07/19",
-    "price": 32178,
-    "availableVancancy": 99,
-    "totalVacnacy": 76,
-    "status": "截止"
-}, {
-    "guaranteed": true,
-    "date": "2018/07/11",
-    "price": 77916,
-    "availableVancancy": 58,
-    "totalVacnacy": 411,
-    "status": "報名"
-}, {
-    "guaranteed": true,
-    "date": "2017/09/21",
-    "price": 91586,
-    "availableVancancy": 34,
-    "totalVacnacy": 40,
-    "status": "預定"
-}, {
-    "guaranteed": true,
-    "date": "2018/01/20",
-    "price": 32900,
-    "availableVancancy": 68,
-    "totalVacnacy": 108,
-    "status": "額滿"
-}, {
     "guaranteed": false,
     "date": "2018/06/20",
     "price": 31589,
@@ -39355,7 +39206,7 @@ var data1 = [{
     "status": "截止"
 }];
 
-exports.default = data1;
+exports.default = data3;
 
 /***/ })
 /******/ ]);
