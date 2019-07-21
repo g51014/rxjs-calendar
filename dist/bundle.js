@@ -14956,7 +14956,7 @@ var _App2 = _interopRequireDefault(_App);
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var setting = {
-  dataSource: __webpack_require__(396),
+  dataSource: __webpack_require__(393),
   //   [
   //     // 資料來源的輸入接口 [ array | string ] 如果是 string的話，請輸入網址
   //     {
@@ -36882,10 +36882,7 @@ var Button = function (_React$Component) {
 exports.default = Button;
 
 /***/ }),
-/* 393 */,
-/* 394 */,
-/* 395 */,
-/* 396 */
+/* 393 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
