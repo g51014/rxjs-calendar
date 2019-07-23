@@ -7,7 +7,6 @@ export default class MonthSelecter extends React.Component {
 
 
   render() {
-    console.log(this.props.currentYM)
     return (
       <div className="tab-month">
         <a onClick = {this.props.service.switchMonth.bind(this,-1)} className="left-arrow" />

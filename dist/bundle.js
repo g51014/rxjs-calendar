@@ -27546,7 +27546,7 @@ var App = function (_React$Component) {
     $date.display.next({ y: parseInt(_this.props.initYearMonth.slice(0, 4)), m: parseInt(_this.props.initYearMonth.split(_this.props.initYearMonth.slice(0, 4))[1]) });
     _this.state = {
       $date: $date,
-      mode: 'calendar',
+      mode: 'list',
       currentYM: { y: parseInt(_this.props.initYearMonth.slice(0, 4)), m: parseInt(_this.props.initYearMonth.split(_this.props.initYearMonth.slice(0, 4))[1]) },
       monthData: []
     };
@@ -27691,18 +27691,33 @@ var DateService = function () {
       });
     }));
 
+    //sort current month data 
+    this.sortMonthData$ = this.monthData$.pipe((0, _operators.map)(function (monthData) {
+      var sortMonthData = _this.sortData(monthData);
+      return { sortMonthData: sortMonthData, page: sortMonthData.length % 8 > 0 ? Math.floor(sortMonthData.length / 8) + 1 : Math.floor(sortMonthData.length / 8) };
+    }));
+
     //method binding
     this.switchMonth = this.switchMonth.bind(this);
     this.getYears = this.getYears.bind(this);
     this.getYearRange = this.getYearRange.bind(this);
+    this.sortData = this.sortData.bind(this);
+    this.filterData = this.filterData.bind(this);
+    this.switchPage = this.switchPage.bind(this);
   }
 
   //---------------method---------------
 
-  //change month
+  //change list page
 
 
   _createClass(DateService, [{
+    key: "switchPage",
+    value: function switchPage() {}
+
+    //change month
+
+  }, {
     key: "switchMonth",
     value: function switchMonth(distance) {
       var _this2 = this;
@@ -27753,6 +27768,60 @@ var DateService = function () {
         last = e > last ? e : last;
       });
       return { first: first, last: last };
+    }
+
+    //sort data min -> max
+
+  }, {
+    key: "sortData",
+    value: function sortData(monthData) {
+      var sortData = [];
+      var max = monthData[0];
+      monthData.forEach(function (e) {
+        max = parseInt(e.date.split('/')[2]) > parseInt(max.date.split('/')[2]) ? e : max;
+      });
+
+      var _loop = function _loop() {
+        var first = max;
+        monthData.filter(function (e) {
+          return !sortData.includes(e);
+        }).forEach(function (e) {
+          first = parseInt(first.date.split('/')[2]) < parseInt(e.date.split('/')[2]) ? first : e;
+        });
+        sortData.push(first);
+      };
+
+      for (var i = 0; i < monthData.length; i++) {
+        _loop();
+      }
+      return this.filterData(sortData);
+    }
+
+    //get cheapest price in the same date
+
+  }, {
+    key: "filterData",
+    value: function filterData(sortData) {
+      var finishData = [],
+          filterData = [];
+      sortData.forEach(function (data) {
+        if (!finishData.includes(data.date)) {
+          var same = sortData.filter(function (e) {
+            return e.date == data.date;
+          });
+          if (same.length > 1) {
+            var cheapest = same[0];
+            same.forEach(function (e) {
+              cheapest = e.price < cheapest.price ? e : cheapest;
+            });
+            filterData.push(cheapest);
+          } else {
+            filterData.push(data);
+          }
+          finishData.push(data.date);
+        }
+      });
+      return filterData;
     }
   }]);
 
@@ -36409,7 +36478,6 @@ var MonthSelecter = function (_React$Component) {
   _createClass(MonthSelecter, [{
     key: "render",
     value: function render() {
-      console.log(this.props.currentYM);
       return _react2.default.createElement(
         "div",
         { className: "tab-month" },
@@ -36473,6 +36541,10 @@ var _card = __webpack_require__(388);
 
 var _card2 = _interopRequireDefault(_card);
 
+var _controlBar = __webpack_require__(394);
+
+var _controlBar2 = _interopRequireDefault(_controlBar);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -36487,20 +36559,46 @@ var List = function (_React$Component) {
   function List(props) {
     _classCallCheck(this, List);
 
-    return _possibleConstructorReturn(this, (List.__proto__ || Object.getPrototypeOf(List)).call(this, props));
+    var _this = _possibleConstructorReturn(this, (List.__proto__ || Object.getPrototypeOf(List)).call(this, props));
+
+    _this.state = {
+      data: [],
+      days: ['禮拜日', '禮拜一', '禮拜二', '禮拜三', '禮拜四', '禮拜五', '禮拜六']
+    };
+    return _this;
   }
 
-  // componentWillUnmount() {
-  //   console.log('list unmount');
-  // }
-
   _createClass(List, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      var _this2 = this;
+
+      this.props.service.sortMonthData$.subscribe(function (monthData) {
+        console.log(monthData);
+        _this2.setState({ data: monthData.sortMonthData, page: monthData.page });
+      });
+    }
+  }, {
     key: 'render',
     value: function render() {
+      var cards = [];
+      var controlBar = this.state.page > 1 ? _react2.default.createElement(_controlBar2.default, null) : '';
+      for (var i = 0; i < this.state.data.length; i++) {
+        var day = new Date(parseInt(this.state.data[i].date.split('/')[0]), parseInt(this.state.data[i].date.split('/')[1] - 1), parseInt(this.state.data[i].date.split('/')[2]));
+        // console.log(day);
+        cards.push(_react2.default.createElement(_card2.default, {
+          key: i,
+          data: this.state.data[i],
+          date: day.getDate(),
+          day: this.state.days[day.getDay()]
+        }));
+      }
+
       return _react2.default.createElement(
         'div',
-        { style: { display: 'flex' }, className: 'calendar' },
-        'list'
+        { className: 'list' },
+        cards,
+        controlBar
       );
     }
   }]);
@@ -36547,7 +36645,63 @@ var Card = function (_React$Component) {
   _createClass(Card, [{
     key: "render",
     value: function render() {
-      return _react2.default.createElement("div", { className: "calendar" });
+      return _react2.default.createElement(
+        "div",
+        { className: "card" },
+        _react2.default.createElement(
+          "div",
+          { className: "card-date" },
+          _react2.default.createElement(
+            "div",
+            null,
+            this.props.date
+          ),
+          _react2.default.createElement(
+            "div",
+            null,
+            this.props.day
+          )
+        ),
+        _react2.default.createElement(
+          "div",
+          { className: "card-available" },
+          _react2.default.createElement(
+            "div",
+            null,
+            "\u53EF\u8CE3: ",
+            this.props.data.availableVancancy
+          ),
+          _react2.default.createElement(
+            "div",
+            null,
+            this.props.data.guaranteed ? '成團' : ''
+          )
+        ),
+        _react2.default.createElement(
+          "div",
+          { className: "card-total" },
+          _react2.default.createElement(
+            "div",
+            null,
+            "\u5718\u4F4D: ",
+            this.props.data.totalVacnacy
+          )
+        ),
+        _react2.default.createElement(
+          "div",
+          { className: "card-price" },
+          _react2.default.createElement(
+            "div",
+            null,
+            this.props.data.status
+          ),
+          _react2.default.createElement(
+            "div",
+            null,
+            this.props.data.price
+          )
+        )
+      );
     }
   }]);
 
@@ -39226,6 +39380,70 @@ var data3 = [{
 }];
 
 exports.default = data3;
+
+/***/ }),
+/* 394 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(24);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var ControlBar = function (_React$Component) {
+  _inherits(ControlBar, _React$Component);
+
+  function ControlBar(props) {
+    _classCallCheck(this, ControlBar);
+
+    return _possibleConstructorReturn(this, (ControlBar.__proto__ || Object.getPrototypeOf(ControlBar)).call(this, props));
+  }
+
+  _createClass(ControlBar, [{
+    key: "render",
+    value: function render() {
+      return _react2.default.createElement(
+        "div",
+        { className: "control-bar" },
+        _react2.default.createElement(
+          "div",
+          { style: { flex: 1, textAlign: 'left' } },
+          "\u4E0A\u4E00\u9801"
+        ),
+        _react2.default.createElement(
+          "div",
+          { style: { flex: 1 } },
+          "1/2"
+        ),
+        _react2.default.createElement(
+          "div",
+          { style: { flex: 1, textAlign: 'right' } },
+          "\u4E0B\u4E00\u9801"
+        )
+      );
+    }
+  }]);
+
+  return ControlBar;
+}(_react2.default.Component);
+
+exports.default = ControlBar;
 
 /***/ })
 /******/ ]);

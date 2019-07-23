@@ -72,5 +72,41 @@ span {
 }
 .day {
   border: solid black 1px;
+  flex-wrap: wrap;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+}
+.card {
+  display: flex;
+  flex-direction: row;
+  border: 1px black solid
+}
+.card-date {
+  text-align: center;
+  display: inline-flex;
+  flex-direction: column;
+  border: 1px black solid;
+  flex: 1
+}
+.card-available {
+  flex:1;
+}
+.card-total {
+  padding-left: 15px;
+  text-align: left;
+  flex:10;
+}
+.card-price {
+  padding-right: 15px;
+  text-align: right;
+  flex:10
+}
+.control-bar {
+  padding: 15px;
+  text-align: center;
+  display: flex;
+  justify-content: row;
 }
 /*# sourceMappingURL=calender.css.map */

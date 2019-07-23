@@ -77,13 +77,29 @@ export default class DateService {
         ),
       )
 
+      //sort current month data 
+      this.sortMonthData$ = this.monthData$.pipe(
+        map(monthData => {
+          let sortMonthData = this.sortData(monthData);
+          return({sortMonthData,page: sortMonthData.length%8 > 0 ? Math.floor(sortMonthData.length/8) + 1 : Math.floor(sortMonthData.length/8)})
+        })
+      )
+  
       //method binding
       this.switchMonth = this.switchMonth.bind(this);
       this.getYears = this.getYears.bind(this);
       this.getYearRange = this.getYearRange.bind(this);
+      this.sortData = this.sortData.bind(this);
+      this.filterData = this.filterData.bind(this);
+      this.switchPage = this.switchPage.bind(this);
     }
 
     //---------------method---------------
+
+    //change list page
+    switchPage() {
+
+    }
 
     //change month
     switchMonth(distance) {
@@ -103,7 +119,6 @@ export default class DateService {
           this.display.next({y,m});
         }
       )
-      
     }
 
     //get all years
@@ -130,4 +145,40 @@ export default class DateService {
       return({first,last});
     }
 
+  //sort data min -> max
+  sortData(monthData) {
+    let sortData = [];
+    let max =  monthData[0];
+    monthData.forEach(e => {
+      max = parseInt(e.date.split('/')[2]) > parseInt(max.date.split('/')[2]) ? e : max
+    });
+    for(var i =0; i < monthData.length; i++) {
+      let first = max;
+      monthData.filter(e => !sortData.includes(e)).forEach(e => {first = parseInt(first.date.split('/')[2]) < parseInt(e.date.split('/')[2]) ? first :  e;})
+      sortData.push(first)
+    }
+    return(this.filterData(sortData))
+  }
+
+  //get cheapest price in the same date
+  filterData(sortData) {
+    let finishData = [], filterData = [];
+    sortData.forEach(
+      data => {
+        if(!finishData.includes(data.date)) {
+          let same = sortData.filter(e => e.date == data.date);
+          if(same.length > 1) {
+            let cheapest = same[0];
+            same.forEach(e => {cheapest = e.price < cheapest.price ? e : cheapest})
+            filterData.push(cheapest)
+          }
+          else {
+            filterData.push(data);
+          }
+          finishData.push(data.date);
+        }
+      }
+    )
+    return filterData
+  }
 }

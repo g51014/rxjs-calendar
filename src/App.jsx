@@ -13,7 +13,7 @@ export default class App extends React.Component {
     $date.display.next( {y:parseInt(this.props.initYearMonth.slice(0,4)),m:parseInt(this.props.initYearMonth.split(this.props.initYearMonth.slice(0,4))[1])});
     this.state = {
       $date: $date,
-      mode: 'calendar',
+      mode: 'list',
       currentYM: {y:parseInt(this.props.initYearMonth.slice(0,4)),m:parseInt(this.props.initYearMonth.split(this.props.initYearMonth.slice(0,4))[1])},
       monthData: []
     }
