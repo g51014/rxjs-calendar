@@ -36409,6 +36409,7 @@ var MonthSelecter = function (_React$Component) {
   _createClass(MonthSelecter, [{
     key: "render",
     value: function render() {
+      console.log(this.props.currentYM);
       return _react2.default.createElement(
         "div",
         { className: "tab-month" },
@@ -36416,9 +36417,30 @@ var MonthSelecter = function (_React$Component) {
         _react2.default.createElement(
           "ul",
           { className: "month-list" },
-          _react2.default.createElement("li", null),
-          _react2.default.createElement("li", null),
-          _react2.default.createElement("li", null)
+          _react2.default.createElement(
+            "li",
+            null,
+            this.props.currentYM.m - 1 < 1 ? this.props.currentYM.y - 1 : this.props.currentYM.y,
+            " ",
+            this.props.currentYM.m - 1 < 1 ? 12 : this.props.currentYM.m - 1,
+            "\u6708"
+          ),
+          _react2.default.createElement(
+            "li",
+            null,
+            this.props.currentYM.y,
+            " ",
+            this.props.currentYM.m,
+            "\u6708"
+          ),
+          _react2.default.createElement(
+            "li",
+            null,
+            this.props.currentYM.m + 1 > 12 ? this.props.currentYM.y + 1 : this.props.currentYM.y,
+            " ",
+            this.props.currentYM.m + 1 > 12 ? 1 : this.props.currentYM.m + 1,
+            "\u6708"
+          )
         ),
         _react2.default.createElement("a", { onClick: this.props.service.switchMonth.bind(this, 1), className: "right-arrow" })
       );
