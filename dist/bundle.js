@@ -27702,7 +27702,7 @@ var DateService = function () {
     this.page$ = this.page.asObservable().pipe((0, _operators.startWith)(1), (0, _operators.mergeMap)(function (_) {
       return _this.sortMonthData$.pipe((0, _operators.take)(1));
     }, function (currentPage, sortMonthData) {
-      console.log(sortMonthData);
+      // console.log(sortMonthData)
       var page = currentPage < sortMonthData.totalPage ? currentPage > 0 ? currentPage : 1 : sortMonthData.totalPage;
       return page;
     }));
@@ -36579,7 +36579,7 @@ var List = function (_React$Component) {
       var _this2 = this;
 
       this.props.service.sortMonthData$.subscribe(function (monthData) {
-        console.log(monthData);
+        // console.log(monthData)
         _this2.setState({ data: monthData.sortMonthData, totalPage: monthData.totalPage, reset: true });
       });
     }

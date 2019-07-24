@@ -13,7 +13,7 @@ export default class List extends React.Component {
   componentDidMount() {
     this.props.service.sortMonthData$.subscribe(
       monthData => {
-        console.log(monthData)
+        // console.log(monthData)
         this.setState({data: monthData.sortMonthData, totalPage: monthData.totalPage, reset: true})
       }
     )

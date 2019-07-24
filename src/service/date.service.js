@@ -92,7 +92,7 @@ export default class DateService {
         mergeMap(
           _ => this.sortMonthData$.pipe(take(1)),
           (currentPage, sortMonthData) => {
-            console.log(sortMonthData)
+            // console.log(sortMonthData)
             let page = currentPage < sortMonthData.totalPage ? currentPage > 0 ? currentPage : 1 : sortMonthData.totalPage
             return page
           }
