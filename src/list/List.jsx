@@ -14,7 +14,7 @@ export default class List extends React.Component {
     this.props.service.sortMonthData$.subscribe(
       monthData => {
         console.log(monthData)
-        this.setState({data: monthData.sortMonthData, page: monthData.page})
+        this.setState({data: monthData.sortMonthData, totalPage: monthData.totalPage, reset: true})
       }
     )
   }
@@ -22,7 +22,7 @@ export default class List extends React.Component {
 
   render() {
     let cards = [];
-    let controlBar = this.state.page > 1 ? <ControlBar/> : '';
+    let controlBar = this.state.totalPage > 1 ? <ControlBar reset = {this.state.reset} totalPage = {this.state.totalPage} service = {this.props.service}/> : '';
     for(var i =0; i< this.state.data.length; i++) {
       let day = new Date(parseInt(this.state.data[i].date.split('/')[0]),parseInt(this.state.data[i].date.split('/')[1]-1),parseInt(this.state.data[i].date.split('/')[2]))
       // console.log(day);

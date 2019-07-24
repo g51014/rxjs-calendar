@@ -81,25 +81,33 @@ export default class DateService {
       this.sortMonthData$ = this.monthData$.pipe(
         map(monthData => {
           let sortMonthData = this.sortData(monthData);
-          return({sortMonthData,page: sortMonthData.length%8 > 0 ? Math.floor(sortMonthData.length/8) + 1 : Math.floor(sortMonthData.length/8)})
+          return({sortMonthData,totalPage: sortMonthData.length%8 > 0 ? Math.floor(sortMonthData.length/8) + 1 : Math.floor(sortMonthData.length/8)})
         })
       )
   
+      //list page 
+      this.page = new Subject();
+      this.page$ = this.page.asObservable().pipe(
+        startWith(1),
+        mergeMap(
+          _ => this.sortMonthData$.pipe(take(1)),
+          (currentPage, sortMonthData) => {
+            console.log(sortMonthData)
+            let page = currentPage < sortMonthData.totalPage ? currentPage > 0 ? currentPage : 1 : sortMonthData.totalPage
+            return page
+          }
+        ));
+
+
       //method binding
       this.switchMonth = this.switchMonth.bind(this);
       this.getYears = this.getYears.bind(this);
       this.getYearRange = this.getYearRange.bind(this);
       this.sortData = this.sortData.bind(this);
       this.filterData = this.filterData.bind(this);
-      this.switchPage = this.switchPage.bind(this);
     }
 
     //---------------method---------------
-
-    //change list page
-    switchPage() {
-
-    }
 
     //change month
     switchMonth(distance) {
@@ -146,7 +154,7 @@ export default class DateService {
     }
 
   //sort data min -> max
-  sortData(monthData) {
+  sortData(monthData, lowPriceFilter = !true) {
     let sortData = [];
     let max =  monthData[0];
     monthData.forEach(e => {
@@ -157,7 +165,7 @@ export default class DateService {
       monthData.filter(e => !sortData.includes(e)).forEach(e => {first = parseInt(first.date.split('/')[2]) < parseInt(e.date.split('/')[2]) ? first :  e;})
       sortData.push(first)
     }
-    return(this.filterData(sortData))
+    return(lowPriceFilter ? this.filterData(sortData) : sortData)
   }
 
   //get cheapest price in the same date
