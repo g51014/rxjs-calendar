@@ -5,8 +5,9 @@ export default class List extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      data:[],
-      days: ['禮拜日','禮拜一','禮拜二','禮拜三','禮拜四','禮拜五','禮拜六']
+      listData:[],
+      days: ['禮拜日','禮拜一','禮拜二','禮拜三','禮拜四','禮拜五','禮拜六'],
+      page: 1
     }
   }
 
@@ -14,7 +15,13 @@ export default class List extends React.Component {
     this.props.service.sortMonthData$.subscribe(
       monthData => {
         // console.log(monthData)
-        this.setState({data: monthData.sortMonthData, totalPage: monthData.totalPage, reset: true})
+        this.setState({sortMonthData: monthData.sortMonthData, listData: monthData.listData, totalPage: monthData.totalPage, page: 1})
+      }
+    )
+    this.props.service.page$.subscribe(
+      page => {
+        this.setState({page: page})
+        // console.log(page)
       }
     )
   }
@@ -22,14 +29,14 @@ export default class List extends React.Component {
 
   render() {
     let cards = [];
-    let controlBar = this.state.totalPage > 1 ? <ControlBar reset = {this.state.reset} totalPage = {this.state.totalPage} service = {this.props.service}/> : '';
-    for(var i =0; i< this.state.data.length; i++) {
-      let day = new Date(parseInt(this.state.data[i].date.split('/')[0]),parseInt(this.state.data[i].date.split('/')[1]-1),parseInt(this.state.data[i].date.split('/')[2]))
-      // console.log(day);
+    let controlBar = this.state.totalPage > 1 ? <ControlBar page = {this.state.page} totalPage = {this.state.totalPage} service = {this.props.service}/> : '';
+    let pageData = this.state.listData[this.state.page-1];
+    for(var i =0; i< (this.state.listData.length > 0 ? pageData.length : 0); i++) {
+      let day = new Date(parseInt(pageData[i].date.split('/')[0]),parseInt(pageData[i].date.split('/')[1]-1),parseInt(pageData[i].date.split('/')[2]))
       cards.push(
         <Card
           key = {i}
-          data = {this.state.data[i]}
+          data = {pageData[i]}
           date = {day.getDate()}
           day = {this.state.days[day.getDay()]}
         />

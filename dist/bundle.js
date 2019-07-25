@@ -27694,7 +27694,16 @@ var DateService = function () {
     //sort current month data 
     this.sortMonthData$ = this.monthData$.pipe((0, _operators.map)(function (monthData) {
       var sortMonthData = _this.sortData(monthData);
-      return { sortMonthData: sortMonthData, totalPage: sortMonthData.length % 8 > 0 ? Math.floor(sortMonthData.length / 8) + 1 : Math.floor(sortMonthData.length / 8) };
+      var totalPage = sortMonthData.length % 8 > 0 ? Math.floor(sortMonthData.length / 8) + 1 : Math.floor(sortMonthData.length / 8);
+      var listData = [];
+      for (var i = 0; i < totalPage; i++) {
+        var pageData = [];
+        for (var j = 0; j < 8; j++) {
+          !!sortMonthData[j + i * 8] ? pageData.push(sortMonthData[j + i * 8]) : '';
+        }
+        listData.push(pageData);
+      }
+      return { sortMonthData: sortMonthData, listData: listData, totalPage: totalPage };
     }));
 
     //list page 
@@ -27778,7 +27787,7 @@ var DateService = function () {
   }, {
     key: "sortData",
     value: function sortData(monthData) {
-      var lowPriceFilter = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : !true;
+      var lowPriceFilter = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
 
       var sortData = [];
       var max = monthData[0];
@@ -36567,8 +36576,9 @@ var List = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (List.__proto__ || Object.getPrototypeOf(List)).call(this, props));
 
     _this.state = {
-      data: [],
-      days: ['禮拜日', '禮拜一', '禮拜二', '禮拜三', '禮拜四', '禮拜五', '禮拜六']
+      listData: [],
+      days: ['禮拜日', '禮拜一', '禮拜二', '禮拜三', '禮拜四', '禮拜五', '禮拜六'],
+      page: 1
     };
     return _this;
   }
@@ -36580,20 +36590,24 @@ var List = function (_React$Component) {
 
       this.props.service.sortMonthData$.subscribe(function (monthData) {
         // console.log(monthData)
-        _this2.setState({ data: monthData.sortMonthData, totalPage: monthData.totalPage, reset: true });
+        _this2.setState({ sortMonthData: monthData.sortMonthData, listData: monthData.listData, totalPage: monthData.totalPage, page: 1 });
+      });
+      this.props.service.page$.subscribe(function (page) {
+        _this2.setState({ page: page });
+        // console.log(page)
       });
     }
   }, {
     key: 'render',
     value: function render() {
       var cards = [];
-      var controlBar = this.state.totalPage > 1 ? _react2.default.createElement(_controlBar2.default, { reset: this.state.reset, totalPage: this.state.totalPage, service: this.props.service }) : '';
-      for (var i = 0; i < this.state.data.length; i++) {
-        var day = new Date(parseInt(this.state.data[i].date.split('/')[0]), parseInt(this.state.data[i].date.split('/')[1] - 1), parseInt(this.state.data[i].date.split('/')[2]));
-        // console.log(day);
+      var controlBar = this.state.totalPage > 1 ? _react2.default.createElement(_controlBar2.default, { page: this.state.page, totalPage: this.state.totalPage, service: this.props.service }) : '';
+      var pageData = this.state.listData[this.state.page - 1];
+      for (var i = 0; i < (this.state.listData.length > 0 ? pageData.length : 0); i++) {
+        var day = new Date(parseInt(pageData[i].date.split('/')[0]), parseInt(pageData[i].date.split('/')[1] - 1), parseInt(pageData[i].date.split('/')[2]));
         cards.push(_react2.default.createElement(_card2.default, {
           key: i,
-          data: this.state.data[i],
+          data: pageData[i],
           date: day.getDate(),
           day: this.state.days[day.getDay()]
         }));
@@ -36746,32 +36760,16 @@ var ControlBar = function (_React$Component) {
   function ControlBar(props) {
     _classCallCheck(this, ControlBar);
 
-    var _this = _possibleConstructorReturn(this, (ControlBar.__proto__ || Object.getPrototypeOf(ControlBar)).call(this, props));
-
-    _this.state = {
-      page: 1
-    };
-    return _this;
+    return _possibleConstructorReturn(this, (ControlBar.__proto__ || Object.getPrototypeOf(ControlBar)).call(this, props));
   }
 
   _createClass(ControlBar, [{
     key: "componentDidMount",
-    value: function componentDidMount() {
-      var _this2 = this;
-
-      this.props.service.sortMonthData$.subscribe(function (_) {
-        // reset page
-        _this2.setState({ page: 1 });
-      });
-      this.props.service.page$.subscribe(function (page) {
-        _this2.setState({ page: page });
-        console.log(page);
-      });
-    }
+    value: function componentDidMount() {}
   }, {
     key: "switchPage",
     value: function switchPage(distance) {
-      this.props.service.page.next(this.state.page + distance);
+      this.props.service.page.next(this.props.page + distance);
     }
   }, {
     key: "render",
@@ -36787,7 +36785,7 @@ var ControlBar = function (_React$Component) {
         _react2.default.createElement(
           "div",
           { style: { flex: 1 } },
-          this.state.page,
+          this.props.page,
           "/",
           this.props.totalPage
         ),

@@ -81,7 +81,16 @@ export default class DateService {
       this.sortMonthData$ = this.monthData$.pipe(
         map(monthData => {
           let sortMonthData = this.sortData(monthData);
-          return({sortMonthData,totalPage: sortMonthData.length%8 > 0 ? Math.floor(sortMonthData.length/8) + 1 : Math.floor(sortMonthData.length/8)})
+          let totalPage = sortMonthData.length%8 > 0 ? Math.floor(sortMonthData.length/8) + 1 : Math.floor(sortMonthData.length/8);
+          let listData = [];
+           for(var i = 0; i < totalPage; i++) {
+             let pageData = []
+             for(var j = 0; j < 8; j++) {
+               !!sortMonthData[j+i*8] ? pageData.push(sortMonthData[j+i*8]) : ''
+             }
+             listData.push(pageData);
+           }
+          return({sortMonthData, listData, totalPage})
         })
       )
   
@@ -154,7 +163,7 @@ export default class DateService {
     }
 
   //sort data min -> max
-  sortData(monthData, lowPriceFilter = !true) {
+  sortData(monthData, lowPriceFilter = true) {
     let sortData = [];
     let max =  monthData[0];
     monthData.forEach(e => {
